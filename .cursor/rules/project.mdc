@@ -1,9 +1,9 @@
 ---
-description: EduTools product and folder standards
+description: Quire product and folder standards
 alwaysApply: true
 ---
 
-# EduTools
+# Quire
 
 Free teacher tools for one-page crossword and word search sheets. Vite, React, TypeScript, TanStack Router, and Tailwind. Do not add Next.js.
 

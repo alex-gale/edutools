@@ -1,5 +1,5 @@
 ---
-description: TypeScript standards for EduTools
+description: TypeScript standards for Quire
 globs: src/**/*.{ts,tsx}
 alwaysApply: false
 ---

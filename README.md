@@ -1,4 +1,4 @@
-# EduTools
+# Quire
 
 Free crossword and word search sheets for teachers.
 

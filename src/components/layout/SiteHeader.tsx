@@ -12,7 +12,7 @@ export function SiteHeader () {
       <div className='mx-auto flex max-w-6xl items-center gap-4 px-4 py-3'>
         <Link to='/' className='mr-auto inline-flex items-center gap-2 font-display text-xl text-ink'>
           <img src='/favicon.svg' alt='' width={36} height={36} className='h-9 w-9' />
-          EduTools
+          Quire
         </Link>
         <nav aria-label='Tools' className='flex items-center gap-1'>
           {links.map(link => (

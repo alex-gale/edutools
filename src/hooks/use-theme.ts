@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const storageKey = 'edutools-theme'
+const storageKey = 'quire-theme'
 
 type Theme = 'light' | 'dark'
 
