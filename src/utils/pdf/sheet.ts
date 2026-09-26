@@ -6,7 +6,6 @@ const didactGothicUrl = new URL('../../assets/fonts/DidactGothic-Regular.ttf', i
 
 export const ink = rgb(0.11, 0.16, 0.13)
 export const pine = rgb(0.16, 0.42, 0.28)
-export const marigold = rgb(0.878, 0.631, 0.102)
 export const line = rgb(0.45, 0.4, 0.32)
 export const white = rgb(1, 1, 1)
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CrosswordPageBorder, CrosswordPuzzle, CrosswordWordList, NoticeTone, SheetView } from '@/types/puzzle'
+import type { CrosswordPageBorder, CrosswordPuzzle, NoticeTone, SheetView } from '@/types/puzzle'
 import { crosswordCellSize, COMFORTABLE_CELL } from '@/utils/fit-sheet'
 import { generateCrossword } from '@/utils/generate-crossword'
 import { parseCrosswordEntries } from '@/utils/parse-crossword-entries'
@@ -12,8 +12,7 @@ export function useCrossword () {
   const [puzzle, setPuzzle] = useState<CrosswordPuzzle | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [messageTone, setMessageTone] = useState<NoticeTone>('info')
-  const [wordList, setWordList] = useState<CrosswordWordList>('hide')
-  const [pageBorder, setPageBorder] = useState<CrosswordPageBorder>('hide')
+  const [pageBorder, setPageBorder] = useState<CrosswordPageBorder>('show')
   const [view, setView] = useState<SheetView>('puzzle')
   const [downloading, setDownloading] = useState<SheetView | null>(null)
 
@@ -28,10 +27,6 @@ export function useCrossword () {
 
   function handleViewChange (next: SheetView) {
     setView(next)
-  }
-
-  function handleWordListChange (next: CrosswordWordList) {
-    setWordList(next)
   }
 
   function handlePageBorderChange (next: CrosswordPageBorder) {
@@ -50,7 +45,7 @@ export function useCrossword () {
     const next = generateCrossword(parsed.entries)
     setPuzzle(next)
     setView('puzzle')
-    const notes = crosswordNotes(parsed.skipped, next, wordList === 'show')
+    const notes = crosswordNotes(parsed.skipped, next)
     setMessage(notes)
     setMessageTone(notes ? 'warning' : 'info')
   }
@@ -63,7 +58,6 @@ export function useCrossword () {
       const bytes = await buildCrosswordPdf(puzzle, {
         title,
         answers: kind === 'answers',
-        wordList,
         pageBorder
       })
       const suffix = kind === 'answers' ? '-answers' : ''
@@ -88,7 +82,6 @@ export function useCrossword () {
     title,
     input,
     puzzle,
-    wordList,
     pageBorder,
     message,
     messageTone,
@@ -97,7 +90,6 @@ export function useCrossword () {
     handleTitleChange,
     handleInputChange,
     handleViewChange,
-    handleWordListChange,
     handlePageBorderChange,
     handleGenerate,
     handleDownloadPuzzle,
@@ -105,7 +97,7 @@ export function useCrossword () {
   }
 }
 
-function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle, wordList: boolean) {
+function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle) {
   const notes: string[] = []
 
   if (skipped > 0) {
@@ -117,7 +109,7 @@ function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle, wordList: boo
     notes.push(`Could not cross these in: ${words}. Each answer needs a shared letter with another word.`)
   }
 
-  const cell = crosswordCellSize(puzzle.rows, puzzle.cols, puzzle.placements.length, wordList ? 112 : 0)
+  const cell = crosswordCellSize(puzzle.rows, puzzle.cols, puzzle.placements.length)
   if (puzzle.placements.length > 0 && cell < COMFORTABLE_CELL) {
     notes.push('This will be cramped on one page. Fewer clues will be easier to read and to edit in Canva.')
   }
