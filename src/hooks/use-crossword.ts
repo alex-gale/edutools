@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CrosswordPuzzle, NoticeTone, SheetView } from '@/types/puzzle'
+import type { CrosswordPageBorder, CrosswordPuzzle, CrosswordWordList, NoticeTone, SheetView } from '@/types/puzzle'
 import { crosswordCellSize, COMFORTABLE_CELL } from '@/utils/fit-sheet'
 import { generateCrossword } from '@/utils/generate-crossword'
 import { parseCrosswordEntries } from '@/utils/parse-crossword-entries'
@@ -12,6 +12,8 @@ export function useCrossword () {
   const [puzzle, setPuzzle] = useState<CrosswordPuzzle | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [messageTone, setMessageTone] = useState<NoticeTone>('info')
+  const [wordList, setWordList] = useState<CrosswordWordList>('hide')
+  const [pageBorder, setPageBorder] = useState<CrosswordPageBorder>('hide')
   const [view, setView] = useState<SheetView>('puzzle')
   const [downloading, setDownloading] = useState<SheetView | null>(null)
 
@@ -28,6 +30,14 @@ export function useCrossword () {
     setView(next)
   }
 
+  function handleWordListChange (next: CrosswordWordList) {
+    setWordList(next)
+  }
+
+  function handlePageBorderChange (next: CrosswordPageBorder) {
+    setPageBorder(next)
+  }
+
   function handleGenerate () {
     const parsed = parseCrosswordEntries(input)
     if (parsed.entries.length === 0) {
@@ -40,7 +50,7 @@ export function useCrossword () {
     const next = generateCrossword(parsed.entries)
     setPuzzle(next)
     setView('puzzle')
-    const notes = crosswordNotes(parsed.skipped, next)
+    const notes = crosswordNotes(parsed.skipped, next, wordList === 'show')
     setMessage(notes)
     setMessageTone(notes ? 'warning' : 'info')
   }
@@ -52,7 +62,9 @@ export function useCrossword () {
       const { buildCrosswordPdf } = await import('@/utils/pdf/crossword-pdf')
       const bytes = await buildCrosswordPdf(puzzle, {
         title,
-        answers: kind === 'answers'
+        answers: kind === 'answers',
+        wordList,
+        pageBorder
       })
       const suffix = kind === 'answers' ? '-answers' : ''
       downloadPdf(bytes, `${fileSlug(title, 'crossword')}${suffix}.pdf`)
@@ -76,6 +88,8 @@ export function useCrossword () {
     title,
     input,
     puzzle,
+    wordList,
+    pageBorder,
     message,
     messageTone,
     view,
@@ -83,13 +97,15 @@ export function useCrossword () {
     handleTitleChange,
     handleInputChange,
     handleViewChange,
+    handleWordListChange,
+    handlePageBorderChange,
     handleGenerate,
     handleDownloadPuzzle,
     handleDownloadAnswers
   }
 }
 
-function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle) {
+function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle, wordList: boolean) {
   const notes: string[] = []
 
   if (skipped > 0) {
@@ -101,7 +117,7 @@ function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle) {
     notes.push(`Could not cross these in: ${words}. Each answer needs a shared letter with another word.`)
   }
 
-  const cell = crosswordCellSize(puzzle.rows, puzzle.cols, puzzle.placements.length)
+  const cell = crosswordCellSize(puzzle.rows, puzzle.cols, puzzle.placements.length, wordList ? 112 : 0)
   if (puzzle.placements.length > 0 && cell < COMFORTABLE_CELL) {
     notes.push('This will be cramped on one page. Fewer clues will be easier to read and to edit in Canva.')
   }

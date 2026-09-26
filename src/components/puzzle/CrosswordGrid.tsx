@@ -3,12 +3,15 @@ import type { CrosswordPuzzle } from '@/types/puzzle'
 interface CrosswordGridProps {
   puzzle: CrosswordPuzzle
   showAnswers: boolean
+  bordered: boolean
 }
 
-export function CrosswordGrid ({ puzzle, showAnswers }: CrosswordGridProps) {
+export function CrosswordGrid ({ puzzle, showAnswers, bordered }: CrosswordGridProps) {
   return (
     <div
-      className='mx-auto grid w-full max-w-xl gap-px bg-line'
+      className={bordered
+        ? 'mx-auto grid w-full max-w-xl gap-px border-2 border-ink bg-line'
+        : 'mx-auto grid w-full max-w-xl gap-px bg-line'}
       style={{ gridTemplateColumns: `repeat(${puzzle.cols}, minmax(0, 1fr))` }}
       aria-label={showAnswers ? 'Crossword answer grid' : 'Crossword grid'}
     >

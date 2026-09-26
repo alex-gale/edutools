@@ -1,19 +1,17 @@
 const rows = [
-  '..PLANET',
-  'S.A.....',
-  'T.R.....',
-  'A.T.....',
-  'R.H.....',
-  '..EARTH.',
-  'M.......',
-  'ORBIT...'
+  '....E..S',
+  'M.PLANET',
+  'O...R..A',
+  'ORBIT..R',
+  'N...H...'
 ]
 
 export function HeroGrid () {
   return (
     <div
       aria-hidden='true'
-      className='mx-auto grid w-full max-w-sm grid-cols-8 gap-1 rounded-3xl border border-line bg-card p-4 shadow-[0_18px_40px_-28px_rgba(28,40,34,0.55)]'
+      className='mx-auto grid w-full max-w-sm gap-1 rounded-3xl border border-line bg-card p-4 shadow-[0_18px_40px_-28px_rgba(28,40,34,0.55)]'
+      style={{ gridTemplateColumns: `repeat(${rows[0]?.length ?? 1}, minmax(0, 1fr))` }}
     >
       {rows.flatMap((row, rowIndex) => [...row].map((letter, colIndex) => (
         <span

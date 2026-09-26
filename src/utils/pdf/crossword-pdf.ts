@@ -1,7 +1,7 @@
 import type { PDFPage } from 'pdf-lib'
-import type { CrosswordPlacement, CrosswordPuzzle } from '../../types/puzzle'
+import type { CrosswordPageBorder, CrosswordPlacement, CrosswordPuzzle, CrosswordWordList } from '../../types/puzzle'
 import { A4, MARGIN } from '../fit-sheet'
-import { drawCenteredText, drawHeader, ink, marigold, openSheet, white, type SheetFonts } from './sheet'
+import { drawCenteredText, drawHeader, ink, marigold, openSheet, pine, white, type SheetFonts } from './sheet'
 import { pdfText, wrapText } from './text'
 
 interface ColumnLayout {
@@ -10,9 +10,25 @@ interface ColumnLayout {
   height: number
 }
 
+interface CrosswordPdfOptions {
+  title: string
+  answers: boolean
+  wordList: CrosswordWordList
+  pageBorder: CrosswordPageBorder
+}
+
+interface BankLayout {
+  words: string[]
+  columns: number
+  width: number
+  fontSize: number
+  lineHeight: number
+  height: number
+}
+
 export async function buildCrosswordPdf (
   puzzle: CrosswordPuzzle,
-  options: { title: string, answers: boolean }
+  options: CrosswordPdfOptions
 ) {
   const { doc, page, fonts } = await openSheet()
   const headerBottom = drawHeader(
@@ -24,10 +40,13 @@ export async function buildCrosswordPdf (
 
   const across = byNumber(puzzle, 'across')
   const down = byNumber(puzzle, 'down')
-  const layout = chooseLayout(puzzle, fonts, across, down, headerBottom, options.answers)
+  const bank = bankLayout(options.wordList === 'show' ? answerWords(puzzle) : [])
+  const layout = chooseLayout(puzzle, fonts, across, down, headerBottom, options.answers, bank)
 
   drawGrid(page, fonts, puzzle, options.answers, layout)
+  if (options.pageBorder === 'show') drawGridBorder(page, puzzle, layout)
   drawClues(page, fonts, layout)
+  drawWordBank(page, fonts, layout)
 
   return doc.save()
 }
@@ -44,7 +63,8 @@ function chooseLayout (
   across: CrosswordPlacement[],
   down: CrosswordPlacement[],
   headerBottom: number,
-  answers: boolean
+  answers: boolean,
+  bank: BankLayout
 ) {
   const contentWidth = A4.width - MARGIN * 2
   const available = headerBottom - MARGIN
@@ -54,11 +74,11 @@ function chooseLayout (
     ? (contentWidth - gap) / 2
     : contentWidth
 
-  let chosen = measure(fonts, across, down, columnWidth, 10, answers, available, contentWidth, puzzle)
+  let chosen = measure(fonts, across, down, columnWidth, 10, answers, available, contentWidth, puzzle, bank)
 
   for (const fontSize of [9, 8, 7]) {
     if (chosen.cell >= 14) break
-    chosen = measure(fonts, across, down, columnWidth, fontSize, answers, available, contentWidth, puzzle)
+    chosen = measure(fonts, across, down, columnWidth, fontSize, answers, available, contentWidth, puzzle, bank)
   }
 
   return chosen
@@ -73,21 +93,27 @@ function measure (
   answers: boolean,
   available: number,
   contentWidth: number,
-  puzzle: CrosswordPuzzle
+  puzzle: CrosswordPuzzle,
+  bank: BankLayout
 ) {
   const lineHeight = fontSize + 3
   const left = columnOf('Across', across, fonts, fontSize, columnWidth, lineHeight, answers)
   const right = columnOf('Down', down, fonts, fontSize, columnWidth, lineHeight, answers)
   const clueHeight = Math.max(left?.height ?? 0, right?.height ?? 0)
   const room = available - clueHeight - 12
+  const bankGap = bank.width > 0 ? 14 : 0
+  const gridWidth = contentWidth - bank.width - bankGap
   const rawCell = Math.floor(Math.min(
-    contentWidth / puzzle.cols,
+    gridWidth / puzzle.cols,
     room / puzzle.rows
   ))
   const cell = Math.min(26, Math.max(rawCell, 8))
-  const gridSize = { width: cell * puzzle.cols, height: cell * puzzle.rows }
-  const gridX = MARGIN + (contentWidth - gridSize.width) / 2
-  const gridY = MARGIN + clueHeight + 12 + Math.max(0, room - gridSize.height) / 2
+  const gridHeight = cell * puzzle.rows
+  const band = Math.max(gridHeight, bank.height)
+  const bandBottom = MARGIN + clueHeight + 12
+  const bandY = bandBottom + Math.max(0, room - band) / 2
+  const pairWidth = cell * puzzle.cols + bankGap + bank.width
+  const pairX = MARGIN + Math.max(0, (contentWidth - pairWidth) / 2)
 
   return {
     fontSize,
@@ -96,9 +122,12 @@ function measure (
     left,
     right,
     cell,
-    gridX,
-    gridY,
-    clueTop: MARGIN + clueHeight
+    gridX: pairX,
+    gridY: bandY + band - gridHeight,
+    clueTop: MARGIN + clueHeight,
+    bankX: pairX + cell * puzzle.cols + bankGap,
+    bankTop: bandY + band,
+    bank
   }
 }
 
@@ -183,7 +212,7 @@ function drawClues (
       y: y - 12,
       size: 12,
       font: fonts.bold,
-      color: marigold
+      color: pine
     })
     y -= 18
 
@@ -201,6 +230,75 @@ function drawClues (
       y -= 3
     }
   })
+}
+
+function drawWordBank (
+  page: PDFPage,
+  fonts: SheetFonts,
+  layout: ReturnType<typeof measure>
+) {
+  const bank = layout.bank
+  if (bank.words.length === 0) return
+
+  page.drawText('Words', {
+    x: layout.bankX,
+    y: layout.bankTop - 12,
+    size: 12,
+    font: fonts.bold,
+    color: marigold
+  })
+
+  const rows = Math.ceil(bank.words.length / bank.columns)
+  const colWidth = bank.width / bank.columns
+  bank.words.forEach((word, index) => {
+    const column = Math.floor(index / rows)
+    const row = index % rows
+    page.drawText(word, {
+      x: layout.bankX + column * colWidth,
+      y: layout.bankTop - 18 - row * bank.lineHeight - bank.fontSize,
+      size: bank.fontSize,
+      font: fonts.regular,
+      color: ink
+    })
+  })
+}
+
+function drawGridBorder (
+  page: PDFPage,
+  puzzle: CrosswordPuzzle,
+  layout: ReturnType<typeof measure>
+) {
+  page.drawRectangle({
+    x: layout.gridX,
+    y: layout.gridY,
+    width: layout.cell * puzzle.cols,
+    height: layout.cell * puzzle.rows,
+    borderColor: ink,
+    borderWidth: 1.6
+  })
+}
+
+function answerWords (puzzle: CrosswordPuzzle) {
+  return [...puzzle.placements.map(item => pdfText(item.answer))].filter(Boolean).sort((a, b) => a.localeCompare(b))
+}
+
+function bankLayout (words: string[]): BankLayout {
+  if (words.length === 0) {
+    return { words, columns: 1, width: 0, fontSize: 10, lineHeight: 13, height: 0 }
+  }
+
+  const columns = words.length > 14 ? 2 : 1
+  const fontSize = words.length > 22 ? 8 : 10
+  const lineHeight = fontSize + 3
+  const rows = Math.ceil(words.length / columns)
+  return {
+    words,
+    columns,
+    width: columns === 2 ? 156 : 100,
+    fontSize,
+    lineHeight,
+    height: 18 + rows * lineHeight
+  }
 }
 
 function isColumn (column: ColumnLayout | null): column is ColumnLayout {

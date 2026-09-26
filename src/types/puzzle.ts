@@ -2,6 +2,10 @@ export type NoticeTone = 'info' | 'warning'
 
 export type SheetView = 'puzzle' | 'answers'
 
+export type CrosswordWordList = 'show' | 'hide'
+
+export type CrosswordPageBorder = 'show' | 'hide'
+
 export interface CrosswordEntry {
   answer: string
   clue: string

@@ -12,9 +12,9 @@ export function wordsearchCellSize (gridSize: number, wordCount: number) {
   return Math.floor(Math.min(contentWidth, room) / gridSize)
 }
 
-export function crosswordCellSize (rows: number, cols: number, clueCount: number) {
+export function crosswordCellSize (rows: number, cols: number, clueCount: number, sideWidth = 0) {
   if (rows < 1 || cols < 1) return 0
-  const contentWidth = A4.width - MARGIN * 2
+  const contentWidth = A4.width - MARGIN * 2 - sideWidth
   const header = 56
   const clueRows = Math.max(1, Math.ceil(clueCount / 2))
   const clueHeight = 24 + clueRows * 30
