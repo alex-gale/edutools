@@ -1,0 +1,23 @@
+---
+description: EduTools product and folder standards
+alwaysApply: true
+---
+
+# EduTools
+
+Free teacher tools for one-page crossword and word search sheets. Vite, React, TypeScript, TanStack Router, and Tailwind. Do not add Next.js.
+
+Lint with neostandard (Standard style for TypeScript): `npm run lint`.
+
+## Folders
+
+- `src/ui` — generic controls only. No puzzle logic.
+- `src/components` — feature UI built from `src/ui`.
+- `src/pages` — route screens. Wire a hook and layout, then stop.
+- `src/hooks` — screen state.
+- `src/utils` — pure parsing, generation, and PDF building.
+- `src/types` — shared puzzle types.
+
+Keep one responsibility per file. Split a growing component instead of extending it. Files in `src/utils` and `src/hooks` use kebab-case. Component files use PascalCase.
+
+Puzzle PDFs stay on a single A4 page and use real text so teachers can edit them in Canva. Sheet text uses Didact Gothic. Interface titles and the logo wordmark use Fraunces. Other interface text uses Quicksand. Do not add name or date lines. Do not add tests unless asked.

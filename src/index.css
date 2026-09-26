@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import "@fontsource/fraunces/latin-600.css";
+@import "@fontsource/fraunces/latin-700.css";
+@import "@fontsource/quicksand/latin-400.css";
+@import "@fontsource/quicksand/latin-600.css";
+@import "@fontsource/quicksand/latin-700.css";
+
+@theme {
+  --font-sans: "Quicksand", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --color-paper: #f4efe6;
+  --color-ink: #1c2822;
+  --color-pine: #2a6a48;
+  --color-pine-dark: #1c4a33;
+  --color-marigold: #e0a11a;
+  --color-clay: #d15d45;
+  --color-card: #fffdf8;
+  --color-line: #e5d9c6;
+  --color-muted: #5c6a62;
+  --color-block: #1c2822;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-paper: #141a17;
+  --color-ink: #f3eee4;
+  --color-pine: #9ed4b6;
+  --color-pine-dark: #1f6b45;
+  --color-marigold: #e8b84a;
+  --color-clay: #e8927c;
+  --color-card: #232b27;
+  --color-line: #3c4a43;
+  --color-muted: #b4c0b8;
+  --color-block: #0c100e;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background:
+    radial-gradient(900px 420px at 0% -10%, #f8e3bc 0%, transparent 60%),
+    radial-gradient(700px 380px at 100% 0%, #d7efe2 0%, transparent 55%),
+    var(--color-paper);
+}
+
+.dark body {
+  background:
+    radial-gradient(900px 420px at 0% -10%, #2a2418 0%, transparent 60%),
+    radial-gradient(700px 380px at 100% 0%, #1a2e26 0%, transparent 55%),
+    var(--color-paper);
+}
+
+::selection {
+  background: #f3d48a;
+}
+
+.dark ::selection {
+  background: #6a5420;
+  color: #f3eee4;
+}

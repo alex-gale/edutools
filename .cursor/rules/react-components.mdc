@@ -1,0 +1,23 @@
+---
+description: React component structure
+globs: src/**/*.tsx
+alwaysApply: false
+---
+
+# React files
+
+- Function components only. One component per file, and the filename is PascalCase.
+- Pages do not generate puzzles or build PDFs. Call a hook, then render.
+- UI primitives stay unaware of crosswords and word searches.
+- Use Tailwind utilities. Do not add a CSS file per component.
+
+```tsx
+export function ToolPage ({ title, editor }: ToolPageProps) {
+  return (
+    <section>
+      <h1>{title}</h1>
+      {editor}
+    </section>
+  )
+}
+```

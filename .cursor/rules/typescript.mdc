@@ -1,0 +1,19 @@
+---
+description: TypeScript standards for EduTools
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript
+
+- `strict` and `verbatimModuleSyntax` are on. Import types with `import type`.
+- No `any`. No enums (`erasableSyntaxOnly`). Use string unions.
+- Export explicit types for puzzle data and public util functions.
+- Util and hook filenames are kebab-case. Function names stay camelCase.
+- Generators stay pure: puzzle data in, puzzle data out.
+
+```ts
+export function parseWordList (raw: string): WordListParse {
+  return { words: [], skipped: 0 }
+}
+```
