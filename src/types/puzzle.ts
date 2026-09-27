@@ -4,6 +4,8 @@ export type SheetView = 'puzzle' | 'answers'
 
 export type CrosswordPageBorder = 'show' | 'hide'
 
+export type CopiesPerPage = '1' | '2'
+
 export interface CrosswordEntry {
   answer: string
   clue: string

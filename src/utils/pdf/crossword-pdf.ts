@@ -1,7 +1,7 @@
 import type { PDFPage } from 'pdf-lib'
-import type { CrosswordPageBorder, CrosswordPlacement, CrosswordPuzzle } from '../../types/puzzle'
-import { A4, MARGIN } from '../fit-sheet'
-import { drawCenteredText, drawHeader, ink, openSheet, pine, white, type SheetFonts } from './sheet'
+import type { CopiesPerPage, CrosswordPageBorder, CrosswordPlacement, CrosswordPuzzle } from '../../types/puzzle'
+import { SECTION_HEADING_GAP, SECTION_HEADING_SIZE } from '../fit-sheet'
+import { contentBoxes, drawCenteredText, drawSectionHeading, ink, openSheet, white, type ContentBox, type SheetFonts } from './sheet'
 import { pdfText, wrapText } from './text'
 
 interface ColumnLayout {
@@ -14,27 +14,40 @@ interface CrosswordPdfOptions {
   title: string
   answers: boolean
   pageBorder: CrosswordPageBorder
+  copies: CopiesPerPage
+}
+
+interface PuzzleLayout {
+  fontSize: number
+  lineHeight: number
+  columnWidth: number
+  columnGap: number
+  boxX: number
+  left: ColumnLayout | null
+  right: ColumnLayout | null
+  cell: number
+  gridX: number
+  gridY: number
+  clueTop: number
 }
 
 export async function buildCrosswordPdf (
   puzzle: CrosswordPuzzle,
   options: CrosswordPdfOptions
 ) {
-  const { doc, page, fonts } = await openSheet()
-  const headerBottom = drawHeader(
-    page,
-    fonts,
-    pdfText(options.title) || 'Crossword',
-    options.answers ? 'Answer key' : 'Crossword'
-  )
+  const { doc, page, fonts } = await openSheet(options.copies)
+  const title = pdfText(options.title) || 'Crossword'
+  const subtitle = options.answers ? 'Answer key' : 'Crossword'
+  const boxes = contentBoxes(page, fonts, options.copies, title, subtitle)
 
-  const across = byNumber(puzzle, 'across')
-  const down = byNumber(puzzle, 'down')
-  const layout = chooseLayout(puzzle, fonts, across, down, headerBottom, options.answers)
-
-  drawGrid(page, fonts, puzzle, options.answers, layout)
-  if (options.pageBorder === 'show') drawGridBorder(page, puzzle, layout)
-  drawClues(page, fonts, layout)
+  for (const box of boxes) {
+    const across = byNumber(puzzle, 'across')
+    const down = byNumber(puzzle, 'down')
+    const layout = chooseLayout(puzzle, fonts, across, down, box, options.answers)
+    drawGrid(page, fonts, puzzle, options.answers, layout)
+    if (options.pageBorder === 'show') drawGridBorder(page, puzzle, layout)
+    drawClues(page, fonts, layout)
+  }
 
   return doc.save()
 }
@@ -50,22 +63,20 @@ function chooseLayout (
   fonts: SheetFonts,
   across: CrosswordPlacement[],
   down: CrosswordPlacement[],
-  headerBottom: number,
+  box: ContentBox,
   answers: boolean
 ) {
-  const contentWidth = A4.width - MARGIN * 2
-  const available = headerBottom - MARGIN
   const columns = [across, down].filter(items => items.length > 0)
-  const gap = columns.length > 1 ? 16 : 0
+  const columnGap = columns.length > 1 ? 16 : 0
   const columnWidth = columns.length > 1
-    ? (contentWidth - gap) / 2
-    : contentWidth
+    ? (box.width - columnGap) / 2
+    : box.width
 
-  let chosen = measure(fonts, across, down, columnWidth, 10, answers, available, contentWidth, puzzle)
+  let chosen = measure(fonts, across, down, columnWidth, columnGap, 10, answers, box, puzzle)
 
   for (const fontSize of [9, 8, 7]) {
     if (chosen.cell >= 14) break
-    chosen = measure(fonts, across, down, columnWidth, fontSize, answers, available, contentWidth, puzzle)
+    chosen = measure(fonts, across, down, columnWidth, columnGap, fontSize, answers, box, puzzle)
   }
 
   return chosen
@@ -76,36 +87,39 @@ function measure (
   across: CrosswordPlacement[],
   down: CrosswordPlacement[],
   columnWidth: number,
+  columnGap: number,
   fontSize: number,
   answers: boolean,
-  available: number,
-  contentWidth: number,
+  box: ContentBox,
   puzzle: CrosswordPuzzle
-) {
+): PuzzleLayout {
   const lineHeight = fontSize + 3
   const left = columnOf('Across', across, fonts, fontSize, columnWidth, lineHeight, answers)
   const right = columnOf('Down', down, fonts, fontSize, columnWidth, lineHeight, answers)
   const clueHeight = Math.max(left?.height ?? 0, right?.height ?? 0)
+  const available = box.top - box.bottom
   const room = available - clueHeight - 12
   const rawCell = Math.floor(Math.min(
-    contentWidth / puzzle.cols,
+    box.width / puzzle.cols,
     room / puzzle.rows
   ))
   const cell = Math.min(26, Math.max(rawCell, 8))
   const gridSize = { width: cell * puzzle.cols, height: cell * puzzle.rows }
-  const gridX = MARGIN + (contentWidth - gridSize.width) / 2
-  const gridY = MARGIN + clueHeight + 12 + Math.max(0, room - gridSize.height) / 2
+  const gridX = box.x + (box.width - gridSize.width) / 2
+  const gridY = box.bottom + clueHeight + 12 + Math.max(0, room - gridSize.height) / 2
 
   return {
     fontSize,
     lineHeight,
     columnWidth,
+    columnGap,
+    boxX: box.x,
     left,
     right,
     cell,
     gridX,
     gridY,
-    clueTop: MARGIN + clueHeight
+    clueTop: box.bottom + clueHeight
   }
 }
 
@@ -124,7 +138,7 @@ function columnOf (
     const answer = answers ? ` (${item.answer})` : ''
     return wrapText(`${item.number}. ${item.clue}${answer}`, fonts.regular, fontSize, columnWidth)
   })
-  const height = 16 + clues.reduce((sum, lines) => sum + lines.length * lineHeight + 3, 0)
+  const height = SECTION_HEADING_SIZE + SECTION_HEADING_GAP + clues.reduce((sum, lines) => sum + lines.length * lineHeight + 3, 0)
   return { heading, clues, height }
 }
 
@@ -133,7 +147,7 @@ function drawGrid (
   fonts: SheetFonts,
   puzzle: CrosswordPuzzle,
   answers: boolean,
-  layout: ReturnType<typeof measure>
+  layout: PuzzleLayout
 ) {
   for (let row = 0; row < puzzle.rows; row += 1) {
     for (let col = 0; col < puzzle.cols; col += 1) {
@@ -179,20 +193,14 @@ function drawGrid (
 function drawClues (
   page: PDFPage,
   fonts: SheetFonts,
-  layout: ReturnType<typeof measure>
+  layout: PuzzleLayout
 ) {
   const columns = [layout.left, layout.right].filter(isColumn)
   columns.forEach((column, index) => {
-    const x = MARGIN + index * (layout.columnWidth + 16)
-    let y = layout.clueTop
-    page.drawText(column.heading, {
-      x,
-      y: y - 12,
-      size: 12,
-      font: fonts.bold,
-      color: pine
-    })
-    y -= 18
+    const x = layout.boxX + index * (layout.columnWidth + layout.columnGap)
+    const headingBaseline = layout.clueTop - SECTION_HEADING_SIZE
+    drawSectionHeading(page, fonts, column.heading, x, headingBaseline)
+    let y = headingBaseline - SECTION_HEADING_GAP
 
     for (const clue of column.clues) {
       for (const text of clue) {
@@ -213,7 +221,7 @@ function drawClues (
 function drawGridBorder (
   page: PDFPage,
   puzzle: CrosswordPuzzle,
-  layout: ReturnType<typeof measure>
+  layout: PuzzleLayout
 ) {
   page.drawRectangle({
     x: layout.gridX,

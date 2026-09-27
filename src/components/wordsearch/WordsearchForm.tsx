@@ -4,7 +4,7 @@ import { Notice } from '@/ui/Notice'
 import { SegmentedControl } from '@/ui/SegmentedControl'
 import { TextArea } from '@/ui/TextArea'
 import { TextField } from '@/ui/TextField'
-import type { NoticeTone, WordsearchDifficulty, WordsearchGridLines, WordsearchLetterCase, WordsearchSize } from '@/types/puzzle'
+import type { CopiesPerPage, NoticeTone, WordsearchDifficulty, WordsearchGridLines, WordsearchLetterCase, WordsearchSize } from '@/types/puzzle'
 
 const difficulties: Array<{ value: WordsearchDifficulty, label: string }> = [
   { value: 'easy', label: 'Easy' },
@@ -34,9 +34,19 @@ const letterCaseOptions: Array<{ value: WordsearchLetterCase, label: string }> =
   { value: 'lower', label: 'Lowercase' }
 ]
 
+const copyOptions: Array<{ value: CopiesPerPage, label: string }> = [
+  { value: '1', label: '1' },
+  { value: '2', label: '2' }
+]
+
+const copiesHint: Record<CopiesPerPage, string> = {
+  1: 'One puzzle on an A4 page.',
+  2: 'Two A5 copies on a landscape page, each with its own border.'
+}
+
 const difficultyHint: Record<WordsearchDifficulty, string> = {
   easy: 'Forwards only, across and down.',
-  medium: 'Forwards, including diagonals.',
+  medium: 'Forwards, including forward diagonals.',
   hard: 'Any direction, including backwards.'
 }
 
@@ -47,6 +57,7 @@ interface WordsearchFormProps {
   sheetSize: WordsearchSize
   gridLines: WordsearchGridLines
   letterCase: WordsearchLetterCase
+  copies: CopiesPerPage
   message: string | null
   messageTone: NoticeTone
   onTitleChange: (value: string) => void
@@ -55,6 +66,7 @@ interface WordsearchFormProps {
   onSheetSizeChange: (value: WordsearchSize) => void
   onGridLinesChange: (value: WordsearchGridLines) => void
   onLetterCaseChange: (value: WordsearchLetterCase) => void
+  onCopiesChange: (value: CopiesPerPage) => void
   onGenerate: () => void
   onExample: () => void
 }
@@ -66,6 +78,7 @@ export function WordsearchForm ({
   sheetSize,
   gridLines,
   letterCase,
+  copies,
   message,
   messageTone,
   onTitleChange,
@@ -74,6 +87,7 @@ export function WordsearchForm ({
   onSheetSizeChange,
   onGridLinesChange,
   onLetterCaseChange,
+  onCopiesChange,
   onGenerate,
   onExample
 }: WordsearchFormProps) {
@@ -135,6 +149,18 @@ export function WordsearchForm ({
               value={letterCase}
               options={letterCaseOptions}
               onChange={value => onLetterCaseChange(value)}
+            />
+          </div>
+        </div>
+        <div>
+          <span className='text-sm font-bold text-ink'>Per page</span>
+          <span className='mt-1 block text-sm leading-5 text-muted'>{copiesHint[copies]}</span>
+          <div className='mt-2'>
+            <SegmentedControl
+              label='Per page'
+              value={copies}
+              options={copyOptions}
+              onChange={value => onCopiesChange(value)}
             />
           </div>
         </div>

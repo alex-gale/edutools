@@ -7,13 +7,13 @@ const forward = [
 ] as const
 
 const diagonal = [
-  { row: 1, col: 1 },
-  { row: 1, col: -1 }
+  { row: 1, col: 1 }
 ] as const
 
 const backward = [
   { row: 0, col: -1 },
   { row: -1, col: 0 },
+  { row: 1, col: -1 },
   { row: -1, col: 1 },
   { row: -1, col: -1 }
 ] as const
@@ -70,12 +70,15 @@ function findSmallest (
 ) {
   let best: WordsearchPuzzle | null = null
   const start = Math.max(longest, 2)
+  const needsDiagonal = directions.some(direction => direction.row !== 0 && direction.col !== 0)
 
   for (let size = start; size <= 20; size += 1) {
     const puzzle = placeBest(words, size, directions, unsuitable)
     if (!puzzle) continue
     if (!best || puzzle.unplaced.length < best.unplaced.length) best = puzzle
-    if (puzzle.unplaced.length === 0) return { size, puzzle }
+    if (puzzle.unplaced.length === 0 && (!needsDiagonal || hasDiagonal(puzzle))) {
+      return { size, puzzle }
+    }
   }
 
   return { size: best?.size ?? start, puzzle: best }
@@ -88,15 +91,39 @@ function placeBest (
   unsuitable: string[]
 ) {
   let best: WordsearchPuzzle | null = null
+  const allowDiagonal = directions.some(direction => direction.row !== 0 && direction.col !== 0)
+
+  function consider (puzzle: WordsearchPuzzle | null) {
+    if (!puzzle) return null
+    const done = puzzle.unplaced.length === 0
+    const diagonal = hasDiagonal(puzzle)
+    if (!best || puzzle.unplaced.length < best.unplaced.length) best = puzzle
+    else if (done && diagonal && !hasDiagonal(best)) best = puzzle
+    if (done && (!allowDiagonal || diagonal)) return puzzle
+    return null
+  }
+
+  if (allowDiagonal) {
+    const leads = [...words].sort((a, b) => a.length - b.length)
+    for (const lead of leads) {
+      const rest = shuffle(words)
+      const index = rest.indexOf(lead)
+      if (index >= 0) rest.splice(index, 1)
+      const ready = consider(placeAttempt([lead, ...rest], size, directions, unsuitable, true))
+      if (ready) return ready
+    }
+  }
 
   for (let attempt = 0; attempt < 6; attempt += 1) {
-    const puzzle = placeAttempt(shuffle(words), size, directions, unsuitable)
-    if (!puzzle) continue
-    if (!best || puzzle.unplaced.length < best.unplaced.length) best = puzzle
-    if (best.unplaced.length === 0) return best
+    const ready = consider(placeAttempt(shuffle(words), size, directions, unsuitable, false))
+    if (ready) return ready
   }
 
   return best
+}
+
+function hasDiagonal (puzzle: WordsearchPuzzle) {
+  return puzzle.placements.some(spot => spot.deltaRow !== 0 && spot.deltaCol !== 0)
 }
 
 function gridSize (minimum: number, sheetSize: WordsearchSize) {
@@ -115,20 +142,23 @@ function placeAttempt (
   words: string[],
   size: number,
   directions: Direction[],
-  unsuitable: string[]
+  unsuitable: string[],
+  preferDiagonal: boolean
 ): WordsearchPuzzle | null {
   if (words.length === 0 || size < 1) return null
 
   const draft = Array.from({ length: size }, () => Array.from({ length: size }, () => ''))
   const placements: WordsearchPlacement[] = []
   const unplaced: string[] = []
+  let stillPreferDiagonal = preferDiagonal
 
   for (const word of words) {
-    const spot = findSpot(draft, word, directions)
+    const spot = findSpot(draft, word, directions, stillPreferDiagonal)
     if (!spot) {
       unplaced.push(word)
       continue
     }
+    if (spot.deltaRow !== 0 && spot.deltaCol !== 0) stillPreferDiagonal = false
     writeWord(draft, word, spot)
     placements.push(spot)
   }
@@ -195,27 +225,47 @@ function differentLetter (current: string) {
   return next
 }
 
-function findSpot (grid: string[][], word: string, directions: Direction[]) {
+function findSpot (
+  grid: string[][],
+  word: string,
+  directions: Direction[],
+  preferDiagonal: boolean
+) {
+  const ordered = shuffle(directions)
+  const sequence = preferDiagonal
+    ? [
+        ...ordered.filter(direction => direction.row !== 0 && direction.col !== 0),
+        ...ordered.filter(direction => direction.row === 0 || direction.col === 0)
+      ]
+    : ordered
+
+  for (const direction of sequence) {
+    const spots = spotsInDirection(grid, word, direction)
+    if (spots.length === 0) continue
+    return spots[Math.floor(Math.random() * spots.length)] ?? null
+  }
+
+  return null
+}
+
+function spotsInDirection (grid: string[][], word: string, direction: Direction) {
   const size = grid.length
   const spots: WordsearchPlacement[] = []
 
   for (let row = 0; row < size; row += 1) {
     for (let col = 0; col < size; col += 1) {
-      for (const direction of shuffle(directions)) {
-        if (!canPlace(grid, word, row, col, direction.row, direction.col)) continue
-        spots.push({
-          word,
-          row,
-          col,
-          deltaRow: direction.row,
-          deltaCol: direction.col
-        })
-      }
+      if (!canPlace(grid, word, row, col, direction.row, direction.col)) continue
+      spots.push({
+        word,
+        row,
+        col,
+        deltaRow: direction.row,
+        deltaCol: direction.col
+      })
     }
   }
 
-  if (spots.length === 0) return null
-  return spots[Math.floor(Math.random() * spots.length)] ?? null
+  return spots
 }
 
 function canPlace (

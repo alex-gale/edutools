@@ -4,22 +4,34 @@ import { Notice } from '@/ui/Notice'
 import { SegmentedControl } from '@/ui/SegmentedControl'
 import { TextArea } from '@/ui/TextArea'
 import { TextField } from '@/ui/TextField'
-import type { CrosswordPageBorder, NoticeTone } from '@/types/puzzle'
+import type { CopiesPerPage, CrosswordPageBorder, NoticeTone } from '@/types/puzzle'
 
 const showHide = [
   { value: 'hide', label: 'Hide' },
   { value: 'show', label: 'Show' }
 ] as const
 
+const copyOptions: Array<{ value: CopiesPerPage, label: string }> = [
+  { value: '1', label: '1' },
+  { value: '2', label: '2' }
+]
+
+const copiesHint: Record<CopiesPerPage, string> = {
+  1: 'One puzzle on an A4 page.',
+  2: 'Two A5 copies on a landscape page, each with its own border.'
+}
+
 interface CrosswordFormProps {
   title: string
   input: string
   pageBorder: CrosswordPageBorder
+  copies: CopiesPerPage
   message: string | null
   messageTone: NoticeTone
   onTitleChange: (value: string) => void
   onInputChange: (value: string) => void
   onPageBorderChange: (value: CrosswordPageBorder) => void
+  onCopiesChange: (value: CopiesPerPage) => void
   onGenerate: () => void
   onExample: () => void
 }
@@ -28,11 +40,13 @@ export function CrosswordForm ({
   title,
   input,
   pageBorder,
+  copies,
   message,
   messageTone,
   onTitleChange,
   onInputChange,
   onPageBorderChange,
+  onCopiesChange,
   onGenerate,
   onExample
 }: CrosswordFormProps) {
@@ -60,6 +74,18 @@ export function CrosswordForm ({
               value={pageBorder}
               options={[...showHide]}
               onChange={value => onPageBorderChange(value)}
+            />
+          </div>
+        </div>
+        <div>
+          <span className='text-sm font-bold text-ink'>Per page</span>
+          <span className='mt-1 block text-sm leading-5 text-muted'>{copiesHint[copies]}</span>
+          <div className='mt-2'>
+            <SegmentedControl
+              label='Per page'
+              value={copies}
+              options={copyOptions}
+              onChange={value => onCopiesChange(value)}
             />
           </div>
         </div>

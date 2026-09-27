@@ -32,11 +32,11 @@ function ClueColumn ({
 }) {
   return (
     <section>
-      <h2 className='font-display text-xl text-ink'>{title}</h2>
+      <h2 className='font-display text-xl text-pine'>{title}</h2>
       {items.length === 0
-        ? <p className='mt-2 text-sm text-muted'>None this time.</p>
+        ? <p className='mt-4 text-sm text-muted'>None this time.</p>
         : (
-          <ol className='mt-2 space-y-1.5 text-sm leading-5'>
+          <ol className='mt-4 space-y-1.5 text-sm leading-5'>
             {items.map(item => (
               <li key={`${item.direction}-${item.number}`}>
                 <span className='font-bold'>{item.number}.</span>

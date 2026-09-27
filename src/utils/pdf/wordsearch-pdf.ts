@@ -1,39 +1,52 @@
-import { rgb } from 'pdf-lib'
-import type { WordsearchLetterCase, WordsearchGridLines, WordsearchPuzzle } from '../../types/puzzle'
-import { A4, MARGIN } from '../fit-sheet'
+import { rgb, type PDFPage } from 'pdf-lib'
+import type { CopiesPerPage, WordsearchLetterCase, WordsearchGridLines, WordsearchPuzzle } from '../../types/puzzle'
+import { SECTION_HEADING_GAP, SECTION_HEADING_SIZE } from '../fit-sheet'
 import { wordColors } from '../word-colors'
-import { drawCenteredText, drawHeader, openSheet, line } from './sheet'
+import { contentBoxes, drawCenteredText, drawSectionHeading, ink, line, openSheet, type ContentBox, type SheetFonts } from './sheet'
 import { pdfText } from './text'
+
+interface WordsearchPdfOptions {
+  title: string
+  answers: boolean
+  gridLines: WordsearchGridLines
+  letterCase: WordsearchLetterCase
+  copies: CopiesPerPage
+}
 
 export async function buildWordsearchPdf (
   puzzle: WordsearchPuzzle,
-  options: {
-    title: string
-    answers: boolean
-    gridLines: WordsearchGridLines
-    letterCase: WordsearchLetterCase
-  }
+  options: WordsearchPdfOptions
 ) {
-  const { doc, page, fonts } = await openSheet()
-  const headerBottom = drawHeader(
-    page,
-    fonts,
-    pdfText(options.title) || 'Word search',
-    options.answers ? 'Answer key' : 'Word search'
-  )
+  const { doc, page, fonts } = await openSheet(options.copies)
+  const title = pdfText(options.title) || 'Word search'
+  const subtitle = options.answers ? 'Answer key' : 'Word search'
+  const boxes = contentBoxes(page, fonts, options.copies, title, subtitle)
 
+  for (const box of boxes) {
+    drawPuzzle(page, fonts, puzzle, options, box)
+  }
+
+  return doc.save()
+}
+
+function drawPuzzle (
+  page: PDFPage,
+  fonts: SheetFonts,
+  puzzle: WordsearchPuzzle,
+  options: WordsearchPdfOptions,
+  box: ContentBox
+) {
   const words = puzzle.placements.map(item => cased(item.word, options.letterCase)).sort()
-  const columns = words.length > 18 ? 4 : 3
+  const columns = box.width < 340 ? 2 : words.length > 18 ? 4 : 3
   const bankFont = words.length > 24 ? 8 : 10
   const rowHeight = bankFont + 4
   const bankRows = Math.max(1, Math.ceil(words.length / columns))
-  const bankHeight = 20 + bankRows * rowHeight
-  const contentWidth = A4.width - MARGIN * 2
-  const room = headerBottom - MARGIN - bankHeight - 12
-  const cell = Math.max(8, Math.floor(Math.min(contentWidth, room) / puzzle.size))
+  const bankHeight = SECTION_HEADING_SIZE + SECTION_HEADING_GAP + bankRows * rowHeight
+  const room = box.top - box.bottom - bankHeight - 12
+  const cell = Math.max(8, Math.floor(Math.min(box.width, room) / Math.max(puzzle.size, 1)))
   const gridSize = cell * puzzle.size
-  const gridX = MARGIN + (contentWidth - gridSize) / 2
-  const gridY = MARGIN + bankHeight + 12 + Math.max(0, room - gridSize) / 2
+  const gridX = box.x + (box.width - gridSize) / 2
+  const gridY = box.bottom + bankHeight + 12 + Math.max(0, room - gridSize) / 2
 
   drawGrid(page, fonts, puzzle, options, gridX, gridY, cell)
   drawBank(
@@ -43,16 +56,15 @@ export async function buildWordsearchPdf (
     columns,
     bankFont,
     rowHeight,
+    box,
     bankHeight,
     options.answers ? 'Words' : 'Find these words'
   )
-
-  return doc.save()
 }
 
 function drawGrid (
-  page: Awaited<ReturnType<typeof openSheet>>['page'],
-  fonts: Awaited<ReturnType<typeof openSheet>>['fonts'],
+  page: PDFPage,
+  fonts: SheetFonts,
   puzzle: WordsearchPuzzle,
   options: {
     answers: boolean
@@ -112,33 +124,29 @@ function cased (value: string, letterCase: WordsearchLetterCase) {
 }
 
 function drawBank (
-  page: Awaited<ReturnType<typeof openSheet>>['page'],
-  fonts: Awaited<ReturnType<typeof openSheet>>['fonts'],
+  page: PDFPage,
+  fonts: SheetFonts,
   words: string[],
   columns: number,
   bankFont: number,
   rowHeight: number,
+  box: ContentBox,
   bankHeight: number,
   heading: string
 ) {
-  const colWidth = (A4.width - MARGIN * 2) / columns
-  page.drawText(heading, {
-    x: MARGIN,
-    y: MARGIN + bankHeight - 12,
-    size: 11,
-    font: fonts.bold,
-    color: rgb(0.11, 0.16, 0.13)
-  })
+  const colWidth = box.width / columns
+  const headingBaseline = box.bottom + bankHeight - SECTION_HEADING_SIZE
+  drawSectionHeading(page, fonts, heading, box.x, headingBaseline)
 
   words.forEach((word, index) => {
     const column = index % columns
     const row = Math.floor(index / columns)
     page.drawText(word, {
-      x: MARGIN + column * colWidth,
-      y: MARGIN + bankHeight - 28 - row * rowHeight,
+      x: box.x + column * colWidth,
+      y: headingBaseline - SECTION_HEADING_GAP - bankFont - row * rowHeight,
       size: bankFont,
       font: fonts.regular,
-      color: rgb(0.11, 0.16, 0.13)
+      color: ink
     })
   })
 }

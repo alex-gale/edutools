@@ -35,8 +35,8 @@ export function WordsearchGrid ({ puzzle, showAnswers, gridLines, letterCase }: 
           )
         }))}
       </div>
-      <h2 className='mt-6 font-display text-xl text-ink'>Find these words</h2>
-      <ul className='mt-2 flex flex-wrap gap-2'>
+      <h2 className='mt-6 font-display text-xl text-pine'>Find these words</h2>
+      <ul className='mt-4 flex flex-wrap gap-2'>
         {words.map(word => {
           const index = puzzle.placements.findIndex(item => item.word === word)
           return (

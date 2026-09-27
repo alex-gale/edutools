@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { NoticeTone, SheetView, WordsearchDifficulty, WordsearchGridLines, WordsearchLetterCase, WordsearchPuzzle, WordsearchSize } from '@/types/puzzle'
+import type { CopiesPerPage, NoticeTone, SheetView, WordsearchDifficulty, WordsearchGridLines, WordsearchLetterCase, WordsearchPuzzle, WordsearchSize } from '@/types/puzzle'
 import { COMFORTABLE_CELL, wordsearchCellSize } from '@/utils/fit-sheet'
 import { fileSlug } from '@/utils/file-slug'
 import { generateWordsearch } from '@/utils/generate-wordsearch'
@@ -13,6 +13,7 @@ export function useWordsearch () {
   const [sheetSize, setSheetSize] = useState<WordsearchSize>('medium')
   const [gridLines, setGridLines] = useState<WordsearchGridLines>('show')
   const [letterCase, setLetterCase] = useState<WordsearchLetterCase>('upper')
+  const [copies, setCopies] = useState<CopiesPerPage>('1')
   const [puzzle, setPuzzle] = useState<WordsearchPuzzle | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [messageTone, setMessageTone] = useState<NoticeTone>('info')
@@ -38,6 +39,10 @@ export function useWordsearch () {
 
   function handleLetterCaseChange (next: WordsearchLetterCase) {
     setLetterCase(next)
+  }
+
+  function handleCopiesChange (next: CopiesPerPage) {
+    setCopies(next)
   }
 
   function handleDifficultyChange (next: WordsearchDifficulty) {
@@ -67,13 +72,13 @@ export function useWordsearch () {
     if (next.grid.length === 0) {
       setPuzzle(null)
       setMessageTone('warning')
-      setMessage(wordsearchNotes(parsed.skipped, next) ?? 'Could not build a sheet from these words.')
+      setMessage(wordsearchNotes(parsed.skipped, next, copies) ?? 'Could not build a sheet from these words.')
       return
     }
 
     setPuzzle(next)
     setView('puzzle')
-    const notes = wordsearchNotes(parsed.skipped, next)
+    const notes = wordsearchNotes(parsed.skipped, next, copies)
     setMessage(notes)
     setMessageTone(notes ? 'warning' : 'info')
   }
@@ -87,7 +92,8 @@ export function useWordsearch () {
         title,
         answers: kind === 'answers',
         gridLines,
-        letterCase
+        letterCase,
+        copies
       })
       const suffix = kind === 'answers' ? '-answers' : ''
       downloadPdf(bytes, `${fileSlug(title, 'wordsearch')}${suffix}.pdf`)
@@ -114,6 +120,7 @@ export function useWordsearch () {
     sheetSize,
     gridLines,
     letterCase,
+    copies,
     puzzle,
     message,
     messageTone,
@@ -125,6 +132,7 @@ export function useWordsearch () {
     handleSheetSizeChange,
     handleGridLinesChange,
     handleLetterCaseChange,
+    handleCopiesChange,
     handleViewChange,
     handleGenerate,
     handleDownloadPuzzle,
@@ -132,7 +140,7 @@ export function useWordsearch () {
   }
 }
 
-function wordsearchNotes (skipped: number, puzzle: WordsearchPuzzle) {
+function wordsearchNotes (skipped: number, puzzle: WordsearchPuzzle, copies: CopiesPerPage) {
   const notes: string[] = []
 
   if (skipped > 0) {
@@ -149,7 +157,7 @@ function wordsearchNotes (skipped: number, puzzle: WordsearchPuzzle) {
 
   if (puzzle.size < 1) return notes.length > 0 ? notes.join(' ') : null
 
-  const cell = wordsearchCellSize(puzzle.size, puzzle.placements.length)
+  const cell = wordsearchCellSize(puzzle.size, puzzle.placements.length, copies)
   if (cell < COMFORTABLE_CELL) {
     notes.push('This will be cramped on one page. A shorter list will be easier to read and to edit in Canva.')
   }
