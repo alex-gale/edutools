@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { CopiesPerPage, NoticeTone, SheetView, WordsearchDifficulty, WordsearchGridLines, WordsearchLetterCase, WordsearchPuzzle, WordsearchSize } from '@/types/puzzle'
-import { COMFORTABLE_CELL, wordsearchCellSize } from '@/utils/fit-sheet'
 import { fileSlug } from '@/utils/file-slug'
 import { generateWordsearch } from '@/utils/generate-wordsearch'
 import { parseWordList } from '@/utils/parse-word-list'
@@ -72,13 +71,13 @@ export function useWordsearch () {
     if (next.grid.length === 0) {
       setPuzzle(null)
       setMessageTone('warning')
-      setMessage(wordsearchNotes(parsed.skipped, next, copies) ?? 'Could not build a sheet from these words.')
+      setMessage(wordsearchNotes(parsed.skipped, next) ?? 'Could not build a sheet from these words.')
       return
     }
 
     setPuzzle(next)
     setView('puzzle')
-    const notes = wordsearchNotes(parsed.skipped, next, copies)
+    const notes = wordsearchNotes(parsed.skipped, next)
     setMessage(notes)
     setMessageTone(notes ? 'warning' : 'info')
   }
@@ -140,7 +139,7 @@ export function useWordsearch () {
   }
 }
 
-function wordsearchNotes (skipped: number, puzzle: WordsearchPuzzle, copies: CopiesPerPage) {
+function wordsearchNotes (skipped: number, puzzle: WordsearchPuzzle) {
   const notes: string[] = []
 
   if (skipped > 0) {
@@ -153,13 +152,6 @@ function wordsearchNotes (skipped: number, puzzle: WordsearchPuzzle, copies: Cop
 
   if (puzzle.unplaced.length > 0) {
     notes.push(`Could not fit: ${puzzle.unplaced.join(', ')}. Try fewer or shorter words.`)
-  }
-
-  if (puzzle.size < 1) return notes.length > 0 ? notes.join(' ') : null
-
-  const cell = wordsearchCellSize(puzzle.size, puzzle.placements.length, copies)
-  if (cell < COMFORTABLE_CELL) {
-    notes.push('This will be cramped on one page. A shorter list will be easier to read and to edit in Canva.')
   }
 
   return notes.length > 0 ? notes.join(' ') : null

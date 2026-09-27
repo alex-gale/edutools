@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { CopiesPerPage, CrosswordPageBorder, CrosswordPuzzle, NoticeTone, SheetView } from '@/types/puzzle'
-import { crosswordCellSize, COMFORTABLE_CELL } from '@/utils/fit-sheet'
 import { generateCrossword } from '@/utils/generate-crossword'
 import { parseCrosswordEntries } from '@/utils/parse-crossword-entries'
 import { fileSlug } from '@/utils/file-slug'
@@ -50,7 +49,7 @@ export function useCrossword () {
     const next = generateCrossword(parsed.entries)
     setPuzzle(next)
     setView('puzzle')
-    const notes = crosswordNotes(parsed.skipped, next, copies)
+    const notes = crosswordNotes(parsed.skipped, next)
     setMessage(notes)
     setMessageTone(notes ? 'warning' : 'info')
   }
@@ -105,7 +104,7 @@ export function useCrossword () {
   }
 }
 
-function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle, copies: CopiesPerPage) {
+function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle) {
   const notes: string[] = []
 
   if (skipped > 0) {
@@ -115,11 +114,6 @@ function crosswordNotes (skipped: number, puzzle: CrosswordPuzzle, copies: Copie
   if (puzzle.unplaced.length > 0) {
     const words = puzzle.unplaced.map(entry => entry.answer).join(', ')
     notes.push(`Could not cross these in: ${words}. Each answer needs a shared letter with another word.`)
-  }
-
-  const cell = crosswordCellSize(puzzle.rows, puzzle.cols, puzzle.placements.length, copies)
-  if (puzzle.placements.length > 0 && cell < COMFORTABLE_CELL) {
-    notes.push('This will be cramped on one page. Fewer clues will be easier to read and to edit in Canva.')
   }
 
   return notes.length > 0 ? notes.join(' ') : null
