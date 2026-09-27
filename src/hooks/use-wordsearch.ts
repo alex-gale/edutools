@@ -7,7 +7,7 @@ import { parseWordList } from '@/utils/parse-word-list'
 import { downloadPdf } from '@/utils/pdf/download'
 
 export function useWordsearch () {
-  const [title, setTitle] = useState('Word search')
+  const [title, setTitle] = useState('')
   const [input, setInput] = useState('')
   const [difficulty, setDifficulty] = useState<WordsearchDifficulty>('medium')
   const [sheetSize, setSheetSize] = useState<WordsearchSize>('medium')

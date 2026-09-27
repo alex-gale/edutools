@@ -97,6 +97,7 @@ export function WordsearchForm ({
         <TextField
           label='Sheet title'
           value={title}
+          placeholder='Word search'
           onChange={value => onTitleChange(value)}
         />
         <TextArea

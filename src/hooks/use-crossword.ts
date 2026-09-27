@@ -7,7 +7,7 @@ import { fileSlug } from '@/utils/file-slug'
 import { downloadPdf } from '@/utils/pdf/download'
 
 export function useCrossword () {
-  const [title, setTitle] = useState('Crossword')
+  const [title, setTitle] = useState('')
   const [input, setInput] = useState('')
   const [puzzle, setPuzzle] = useState<CrosswordPuzzle | null>(null)
   const [message, setMessage] = useState<string | null>(null)

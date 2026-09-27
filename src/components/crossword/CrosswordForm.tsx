@@ -56,6 +56,7 @@ export function CrosswordForm ({
         <TextField
           label='Sheet title'
           value={title}
+          placeholder='Crossword'
           onChange={value => onTitleChange(value)}
         />
         <TextArea
